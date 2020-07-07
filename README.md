@@ -19,6 +19,16 @@ Both C-style versions and iteration version can degrade fairly quickly with the
 addition of small change that require bounds checks or prevent other
 optimizations.
 
+## Visualizing Results
+
+Once you've installed dependencies (`numpy >= 1.16.1` and `dash >= 0.42.0`), run:
+
+```sh
+$ python3 result_presenter.py -p .
+```
+
+And visit `http://0.0.0.0:8050/` to see the results!
+
 ## Compiling & Running Benchmarks
 
 You need a recent Rust nightly for access to the `#[bench]` feature (for
