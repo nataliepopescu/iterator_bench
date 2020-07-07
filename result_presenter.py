@@ -8,6 +8,7 @@
 import argparse
 import os
 import json
+import re
 import numpy as np
 import dash
 import dash_core_components as dcc
@@ -16,19 +17,28 @@ import plotly.graph_objects as go
 
 
 path_to_compiler_types = "./results"
-compiler_types = [
-    "post-may-3",
-    "post-may-3-nobc",
-    "pre-may-3",
-    "pre-may-3-nobc"
-]
 
+switcher = {
+    "pre-may-3": {
+        "label": "Rustc Before May 3",
+        "color": "#FFA500"
+    },
+    "pre-may-3-nobc": {
+        "label": "Rustc Before May 3 [No Bounds Checks]",
+        "color": "#FF4500"
+    },
+    "post-may-3": {
+        "label": "Rustc After May 3",
+        "color": "#0571B0"
+    },
+    "post-may-3-nobc": {
+        "label": "Rustc After May 3 [No Bounds Checks]",
+        "color": "#DDA0DD"
+    }
+}
 
-#def get_compiler_types():
-#    global compiler_types
-#    for name in os.listdir(path_to_compiler_types):
-#        compiler_types.append(name)
-#    compiler_types.sort()
+value_pattern = "bench:\s+([0-9,]*)\D+([0-9,]*)"
+name_pattern = "(?<=test\s).*(?=\s+[.]{3}\s+bench)"
 
 
 # Geometric mean helper
@@ -61,21 +71,16 @@ app.config.suppress_callback_exceptions = True
 
 
 def create_options():
-    global compiler_types
     options = []
+    global switcher
+    compiler_types = switcher.keys()
     for comp_type in compiler_types:
-        switcher = {
-            "post-may-3": "Rustc After May 3",
-            "post-may-3-nobc": "Rustc After May 3 [No Bounds Checks]",
-            "pre-may-3": "Rustc Before May 3",
-            "pre-may-3-nobc": "Rustc Before May 3 [No Bounds Checks]"
-        }
-        label = switcher.get(comp_type, "Invalid Compiler Type")
+        label = switcher.get(comp_type, "Invalid Compiler Type").get("label")
         options.append({'label': label, 'value': comp_type})
     return options
 
 
-def getPerfIterLayout(): #resultProvider):
+def getPerfIterLayout():
 
     layout = html.Div([
 #        html.Br(),
@@ -85,29 +90,19 @@ def getPerfIterLayout(): #resultProvider):
 
         html.Br(),
         html.Label('Select compiler types:'),
-        dcc.Dropdown(id='comp_type_name',
+        dcc.Checklist(id='comp_type_names',
             options=create_options(),
-            value='KDFs',
+            value=[],
             style={'width': '50%'}
         ),
 
         html.Br(),
         html.Div([
-            html.Label('Pick an optimization setting:'),
-            dcc.RadioItems(id='comp_type_opt',
-                options=[
-                    {'label': 'LTO=thin', 'value': 'cloudlab-output'},
-                    {'label': 'LTO=fat', 'value': 'cloudlab-output-lto'},
-                ],
-                value='cloudlab-output',
-                labelStyle={'display': 'inline-block'}
-            ),
-
             html.Label('Pick a view:'),
             dcc.RadioItems(id='comp_type_view',
                 options=[
                     {'label': 'Absolute', 'value': 'abs'},
-                    {'label': 'Relative', 'value': 'rel'},
+#                    {'label': 'Relative', 'value': 'rel'},
                 ],
                 value='abs',
                 labelStyle={'display': 'inline-block'}
@@ -123,24 +118,27 @@ def getPerfIterLayout(): #resultProvider):
 
 
 @app.callback(dash.dependencies.Output('comp_type-content', 'children'),
-              [dash.dependencies.Input('comp_type_name', 'value'),
-               dash.dependencies.Input('comp_type_opt', 'value'),
+              [dash.dependencies.Input('comp_type_names', 'value'),
                dash.dependencies.Input('comp_type_view', 'value')])
-def display_comp_type_info(comp_type_name, comp_type_opt, comp_type_view):
+def display_comp_type_info(comp_type_names, comp_type_view):
 
     if comp_type_view == 'rel':
-        return display_rel(comp_type_name, comp_type_opt)
+        return display_rel(comp_type_names)
     elif comp_type_view == 'abs':
-        return display_abs(comp_type_name, comp_type_opt)
+        return display_abs(comp_type_names)
 
 
-def display_rel(comp_type_name, comp_type_opt):
+def display_rel(comp_type_names):
+    return false
 
-    def get_one_bar_rel(rustc_type, bar_name, color):
+
+def display_abs(comp_type_names):
+
+    def get_one_bar_abs(comp_type, bar_name, color):
         one_bmark_list = []
         one_perf_list = []
 
-        filepath = path_to_compiler_types + "/" + comp_type_name + "/" + comp_type_opt + "/bench-sanity-CRUNCHED.data"
+        filepath = path_to_compiler_types + "/" + comp_type
 
         # open file for reading
         handle = open(filepath, 'r')
@@ -148,110 +146,29 @@ def display_rel(comp_type_name, comp_type_opt):
         for line in handle:
             if line[:1] == '#':
                 continue
-            cols = line.split()
 
             # get benchmark names for this comp_type
-            name = cols[0]
-            one_bmark_list.append(name)
+            name = re.search(name_pattern, line)
+            if name:
+                format_name = name.group(0).split("::")[0]
+                one_bmark_list.append(format_name)
 
-            # get baseline (vanilla times) to compare this version againt
-            vanilla = cols[1]
-
-            # get the times from the specified (column * 2 + 1)
-            col = rustc_type * 2 + 1
-            time = cols[col]
-
-            # calculate the percent speedup or slowdown
-            div = float(vanilla) if float(vanilla) != 0 else 1
-            perc_time = ((float(time) - float(vanilla)) / div) * 100
-            one_perf_list.append(perc_time)
-
+            # get benchmark times for this comp_type
+            time = re.search(value_pattern, line)
+            if time: 
+                format_time = time.group(0).split()[1]
+                one_perf_list.append(format_time)
 
         bar_one = {'x': one_bmark_list, 'y': one_perf_list, 
                    'type': 'bar', 'name': bar_name, 'marker_color': color}
         return bar_one
 
-    
-    bar_nobc = get_one_bar_rel(1, "Rustc No Slice Bounds Checks", '#ca0020')
-    bar_both = get_one_bar_rel(2, "Rustc No Slice Bounds Checks + Safe memcpy", '#D8BFD8')
-    bar_safelib = get_one_bar_rel(3, "Rustc Safe memcpy", '#0571b0')
-
-    bar_list = [bar_nobc, bar_both, bar_safelib]
-
-    fig = go.Figure({
-                    'data': bar_list,
-                    'layout': {
-                        'legend': {'orientation': 'h', 'x': 0.2, 'y': 1.3},
-                        'yaxis': {
-                            'showline': True, 
-                            'linewidth': 2,
-                            'ticks': "outside",
-                            'mirror': 'all',
-                            'linecolor': 'black',
-                            'gridcolor':'rgb(200,200,200)', 
-                            'nticks': 20,
-                            'title': {'text': " Performance Change Relative to Vanilla [%]"},
-                        },
-                        'xaxis': {
-                            'linecolor': 'black',
-                            'showline': True, 
-                            'linewidth': 2,
-                            'mirror': 'all',
-                            'nticks': 10,
-                            'showticklabels': True,
-                            'title': {'text': "Benchmarks"},
-                        },
-                        'font': {'family': 'Helvetica', 'color': "Black"},
-                        'plot_bgcolor': 'white',
-                        'autosize': False,
-                        'width': 1450, 
-                        'height': 700}
-                    })
-
-    return html.Div(
-        dcc.Graph(
-            id='rustc-compare-graph-rel',
-            figure=fig
-        )
-    )
-
-
-def display_abs(comp_type_name, comp_type_opt):
-
-    def get_one_bar_abs(rustc_type, bar_name, color):
-        one_bmark_list = []
-        one_perf_list = []
-
-        filepath = path_to_compiler_types + "/" + comp_type_name + "/" + comp_type_opt + "/bench-sanity-CRUNCHED.data"
-
-        # open file for reading
-        handle = open(filepath, 'r')
-
-        for line in handle:
-            if line[:1] == '#':
-                continue
-            cols = line.split()
-
-            # get benchmark names for this comp_type
-            name = cols[0]
-            one_bmark_list.append(name)
-
-            # get the times from the specified (column * 2 + 1)
-            col = rustc_type * 2 + 1
-            time = cols[col]
-            one_perf_list.append(time)
-
-
-        bar_one = {'x': one_bmark_list, 'y': one_perf_list, 
-                   'type': 'bar', 'name': bar_name, 'marker_color': color}
-        return bar_one
-
-    bar_unmod = get_one_bar_abs(0, "Vanilla Rustc", '#ca0020')
-    bar_nobc = get_one_bar_abs(1, "Rustc No Slice Bounds Checks", '#f4a582')
-    bar_both = get_one_bar_abs(2, "Rustc No Slice Bounds Checks + Safe memcpy", '#0571b0')
-    bar_safelib = get_one_bar_abs(3, "Rustc Safe memcpy", '#abd9e9')
-
-    bar_list = [bar_unmod, bar_nobc, bar_both, bar_safelib]
+    bar_list = []
+    for comp_type in comp_type_names:
+        label = switcher.get(comp_type).get("label")
+        color = switcher.get(comp_type).get("color")
+        bar = get_one_bar_abs(comp_type, label, color)
+        bar_list.append(bar)
 
     fig = go.Figure({
                     'data': bar_list,
@@ -303,7 +220,7 @@ def display_page(pathname):
         pathname = '/compare_iter'
 
     if pathname == '/compare_iter':
-        layout = getPerfIterLayout() #app._resultProvider)
+        layout = getPerfIterLayout()
         return layout
     else:
         return 404
@@ -315,13 +232,10 @@ if __name__ == '__main__':
     result_path = os.path.join(cpf_root, "./results")
     #app._resultProvider = ResultProvider(result_path)
 
-    global compiler_types
-    compiler_types.sort()
-
     app.layout = html.Div([
         dcc.Location(id='url', refresh=False),
         #dcc.Link('Performance in the Wild', href='/compareCrates'),
-        3html.Br(),
+        #html.Br(),
         html.Div(id='page-content')
     ])
 
