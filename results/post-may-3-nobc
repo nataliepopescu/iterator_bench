@@ -1,0 +1,41 @@
+
+running 36 tests
+test c_style_fixed_size::_test ... ignored
+test c_style_input_size_fixed::_test ... ignored
+test c_style_output_size_fixed::_test ... ignored
+test c_style_unknown_size::_test ... ignored
+test c_style_unknown_size_limit::_test ... ignored
+test optimal_unsafe::_test ... ignored
+test zip_chunks_exact_unknown_size::_test ... ignored
+test zip_chunks_exact_unknown_size_slice::_test ... ignored
+test zip_chunks_exact_unknown_size_take::_test ... ignored
+test zip_chunks_exact_unknown_size_take_iter::_test ... ignored
+test zip_chunks_fixed_size::_test ... ignored
+test zip_chunks_fixed_size_take::_test ... ignored
+test zip_chunks_fixed_size_take_iter::_test ... ignored
+test zip_chunks_input_size_fixed::_test ... ignored
+test zip_chunks_output_size_fixed::_test ... ignored
+test zip_chunks_unknown_size::_test ... ignored
+test zip_chunks_unknown_size_take::_test ... ignored
+test zip_chunks_unknown_size_take_iter::_test ... ignored
+test c_style_fixed_size::_bench                      ... bench:      72,471 ns/iter (+/- 101)
+test c_style_input_size_fixed::_bench                ... bench:      72,476 ns/iter (+/- 110)
+test c_style_output_size_fixed::_bench               ... bench:      72,538 ns/iter (+/- 170)
+test c_style_unknown_size::_bench                    ... bench:      72,543 ns/iter (+/- 166)
+test c_style_unknown_size_limit::_bench              ... bench:      72,548 ns/iter (+/- 193)
+test optimal_unsafe::_bench                          ... bench:      72,476 ns/iter (+/- 111)
+test zip_chunks_exact_unknown_size::_bench           ... bench:      72,547 ns/iter (+/- 235)
+test zip_chunks_exact_unknown_size_slice::_bench     ... bench:      72,541 ns/iter (+/- 133)
+test zip_chunks_exact_unknown_size_take::_bench      ... bench:     334,593 ns/iter (+/- 538)
+test zip_chunks_exact_unknown_size_take_iter::_bench ... bench:     334,589 ns/iter (+/- 475)
+test zip_chunks_fixed_size::_bench                   ... bench:      72,481 ns/iter (+/- 192)
+test zip_chunks_fixed_size_take::_bench              ... bench:      72,477 ns/iter (+/- 128)
+test zip_chunks_fixed_size_take_iter::_bench         ... bench:     201,954 ns/iter (+/- 539)
+test zip_chunks_input_size_fixed::_bench             ... bench:      72,543 ns/iter (+/- 114)
+test zip_chunks_output_size_fixed::_bench            ... bench:      72,553 ns/iter (+/- 588)
+test zip_chunks_unknown_size::_bench                 ... bench:      72,536 ns/iter (+/- 130)
+test zip_chunks_unknown_size_take::_bench            ... bench:     334,580 ns/iter (+/- 507)
+test zip_chunks_unknown_size_take_iter::_bench       ... bench:   4,336,522 ns/iter (+/- 2,969,894)
+
+test result: ok. 0 passed; 0 failed; 18 ignored; 18 measured; 0 filtered out
+
